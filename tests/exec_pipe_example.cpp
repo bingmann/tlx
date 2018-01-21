@@ -13,17 +13,19 @@
 #include <tlx/die.hpp>
 #include <tlx/digest/sha256.hpp>
 #include <tlx/logger.hpp>
-#include <tlx/string/hexdump.hpp>
 
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 
+//! [example1]
 /*
  * This first example shows how to directly call a program, in this case
  * "/bin/echo" and save it's output in a std::string.
  */
 void example1() {
+    LOG1 << "example1()";
+
     tlx::ExecPipe ep;
 
     ep.add_exec("/bin/echo", "-n", "test123");
@@ -44,12 +46,16 @@ void example1() {
         LOG1 << "Error running children: " << e.what();
     }
 }
+//! [example1]
 
+//! [example2]
 /*
  * This second example shows how to directly call a program, but this time use
  * execp() variants, which search the PATH environment.
  */
 void example2() {
+    LOG1 << "example2()";
+
     tlx::ExecPipe ep;
 
     std::string input = "test123";
@@ -73,13 +79,17 @@ void example2() {
         LOG1 << "Error running children: " << e.what();
     }
 }
+//! [example2]
 
+//! [example3]
 /*
  * This third example shows how to call a sequence of programs. The pipe
  * consists of "ls --size /bin" listing a direction, grepping out all 'shells'
  * and sorting these by file size.
  */
 void example3() {
+    LOG1 << "example3()";
+
     tlx::ExecPipe ep;
 
     ep.add_execp("ls", "--size", "/bin");
@@ -112,12 +122,14 @@ void example3() {
         LOG1 << "Error running children: " << e.what();
     }
 }
+//! [example3]
 
+//! [example4]
 /*
  * This example shows how to use the function classes tlx::ExecPipeSource and
  * tlx::ExecPipeFunction to insert custom processing into a pipe sequence. The
- * application calls tar to create an archive, calculates the SHA1 digest of the
- * uncompressed tarball and then pipes the data into gzip for compression.
+ * application calls tar to create an archive, calculates the SHA256 digest of
+ * the uncompressed tarball and then pipes the data into gzip for compression.
  */
 class FilelistSource : public tlx::ExecPipeSource
 {
@@ -147,28 +159,27 @@ public:
 class Sha256Function : public tlx::ExecPipeFunction
 {
 public:
-    // Context of running SHA1 digest
+    // Context of running SHA256 digest
     tlx::SHA256 ctx_;
 
     // Finished digest generated in eof().
     std::string digest_;
 
-    // Update the sha1 digest context and pass on unmodified data.
+    // Update the sha256 digest context and pass on unmodified data.
     void process(const void* data, size_t datalen) final {
         ctx_.process(data, datalen);
         write(data, datalen);
     }
 
-    // Calculate final SHA1 digest once the data stream closes.
+    // Calculate final SHA256 digest once the data stream closes.
     void eof() final {
-        unsigned char digest[tlx::SHA256::kDigestLength];
-        ctx_.finalize(digest);
-
-        digest_.assign(reinterpret_cast<char*>(digest), sizeof(digest));
+        digest_ = ctx_.digest_hex();
     }
 };
 
 void example4() {
+    LOG1 << "example4()";
+
     tlx::ExecPipe ep;
 
     // initialize a source object generating some file names. obviously in a
@@ -194,11 +205,11 @@ void example4() {
 
     ep.add_execp(&tarargs);
 
-    // insert an intermediate processing stage to save the SHA1 sum of the
+    // insert an intermediate processing stage to save the SHA256 sum of the
     // uncompressed tarball.
-    Sha256Function sha1tar;
+    Sha256Function sha_tar;
 
-    ep.add_function(&sha1tar);
+    ep.add_function(&sha_tar);
 
     // add compression stage
     ep.add_execp("gzip", "-9");
@@ -216,11 +227,10 @@ void example4() {
         }
         else
         {
-            LOG1 << "SHA1 of uncompress tar: "
-                 << tlx::hexdump(sha1tar.digest_);
+            LOG1 << "SHA-256 of uncompress tar: " << sha_tar.digest_;
 
             LOG1 << "You can verify the digest using:";
-            LOG1 << "    zcat /tmp/tlx-execpipe-functions1.tar.gz | sha1sum";
+            LOG1 << "    zcat /tmp/tlx-execpipe-functions1.tar.gz | sha256sum";
         }
     }
     catch (std::runtime_error& e)
@@ -228,11 +238,13 @@ void example4() {
         LOG1 << "Error running children: " << e.what();
     }
 }
+//! [example4]
 
 int main() {
     example1();
     example2();
     example3();
+    example4();
 
     return 0;
 }

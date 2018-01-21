@@ -49,6 +49,7 @@ List of the most commonly use components:
 - \ref delegate.hpp "Fast Delegates" : \ref Delegate.
 - \ref siphash.hpp "SipHash" : simple string hashing
 - \ref stack_allocator.hpp "StackAllocator" : stack-local allocations
+- \subpage tlx_execpipe
 - Threading : \ref ThreadPool, \ref Semaphore.
 
 \author Timo Bingmann (2018)
