@@ -21,6 +21,7 @@
 
 #include <tlx/byte_ring_buffer.hpp>
 
+#include <atomic>
 #include <cassert>
 #include <cerrno>
 #include <cstdlib>
@@ -340,7 +341,7 @@ class ExecPipeImpl
 {
 private:
     //! reference counter
-    unsigned int refs_;
+    std::atomic<size_t> refs_;
 
 private:
     // *** Debugging Output ***
@@ -433,12 +434,14 @@ private:
      * Structure representing each stage in the pipe. Contains arguments,
      * buffers and output variables.
      */
-    struct Stage {
+    class Stage
+    {
+    public:
         //! List of program and arguments copied from simple add_exec() calls.
-        std::vector<std::string>      args;
+        std::vector<std::string> args;
 
         //! Character pointer to program path called
-        const char                    * prog;
+        const char* prog;
 
         //! Pointer to user list of program and arguments.
         const std::vector<std::string>* argsp;
@@ -447,32 +450,32 @@ private:
         const std::vector<std::string>* envp;
 
         //! Pipe stage function object.
-        ExecPipeFunction              * func;
+        ExecPipeFunction* func;
 
         //! Output stream buffer for function object.
-        ByteRingBuffer                outbuffer;
+        ByteRingBuffer outbuffer;
 
         // *** Exec Stages Variables ***
 
         //! Call execp() variants.
-        bool                          withpath;
+        bool withpath;
 
         //! Pid of the running child process
-        pid_t                         pid;
+        pid_t pid;
 
         //! Return status of wait() after child exit.
-        int                           retstatus;
+        int ret_status;
 
         //! File descriptor for child stdin. This is dup2()-ed to STDIN.
-        int                           stdin_fd;
+        int stdin_fd;
 
         //! File descriptor for child stdout. This is dup2()-ed to STDOUT.
-        int                           stdout_fd;
+        int stdout_fd;
 
         //! Constructor reseting all variables.
         Stage()
             : prog(nullptr), argsp(nullptr), envp(nullptr), func(nullptr),
-              withpath(false), pid(0), retstatus(0),
+              withpath(false), pid(0), ret_status(0),
               stdin_fd(-1), stdout_fd(-1)
         { }
     };
@@ -501,7 +504,7 @@ public:
     { }
 
     //! Return writable reference to counter.
-    unsigned int& refs() {
+    std::atomic<size_t>& refs() {
         return refs_;
     }
 
@@ -547,9 +550,9 @@ public:
     }
 
     /*!
-     * Assign a ExecPipeSource as input stream source. The object will be queried
-     * via the read() function for data which is then written to the first exec
-     * stage.
+     * Assign a ExecPipeSource as input stream source. The object will be
+     * queried via the read() function for data which is then written to the
+     * first exec stage.
      */
     void set_input_source(ExecPipeSource* source) {
         assert(input_ == ST_NONE);
@@ -612,8 +615,8 @@ public:
     }
 
     /*!
-     * Assign a ExecPipeSink as output stream destination. The object will receive
-     * data via the process() function and is informed via eof()
+     * Assign a ExecPipeSink as output stream destination. The object will
+     * receive data via the process() function and is informed via eof()
      */
     void set_output_sink(ExecPipeSink* sink) {
         assert(output_ == ST_NONE);
@@ -640,7 +643,7 @@ public:
      * is set to prog.
      */
     void add_exec(const char* prog) {
-        struct Stage newstage;
+        Stage newstage;
         newstage.prog = prog;
         newstage.args.push_back(prog);
         stages_.push_back(newstage);
@@ -651,7 +654,7 @@ public:
      * is set to prog.
      */
     void add_exec(const char* prog, const char* arg1) {
-        struct Stage newstage;
+        Stage newstage;
         newstage.prog = prog;
         newstage.args.push_back(prog);
         newstage.args.push_back(arg1);
@@ -663,7 +666,7 @@ public:
      * is set to prog.
      */
     void add_exec(const char* prog, const char* arg1, const char* arg2) {
-        struct Stage newstage;
+        Stage newstage;
         newstage.prog = prog;
         newstage.args.push_back(prog);
         newstage.args.push_back(arg1);
@@ -677,12 +680,105 @@ public:
      */
     void add_exec(const char* prog, const char* arg1, const char* arg2,
                   const char* arg3) {
-        struct Stage newstage;
+        Stage newstage;
         newstage.prog = prog;
         newstage.args.push_back(prog);
         newstage.args.push_back(arg1);
         newstage.args.push_back(arg2);
         newstage.args.push_back(arg3);
+        stages_.push_back(newstage);
+    }
+
+    /*!
+     * Add an exec() stage to the pipe with given arguments. Note that argv[0]
+     * is set to prog.
+     */
+    void add_exec(const char* prog, const char* arg1, const char* arg2,
+                  const char* arg3, const char* arg4) {
+        Stage newstage;
+        newstage.prog = prog;
+        newstage.args.push_back(prog);
+        newstage.args.push_back(arg1);
+        newstage.args.push_back(arg2);
+        newstage.args.push_back(arg3);
+        newstage.args.push_back(arg4);
+        stages_.push_back(newstage);
+    }
+
+    /*!
+     * Add an exec() stage to the pipe with given arguments. Note that argv[0]
+     * is set to prog.
+     */
+    void add_exec(const char* prog, const char* arg1, const char* arg2,
+                  const char* arg3, const char* arg4, const char* arg5) {
+        Stage newstage;
+        newstage.prog = prog;
+        newstage.args.push_back(prog);
+        newstage.args.push_back(arg1);
+        newstage.args.push_back(arg2);
+        newstage.args.push_back(arg3);
+        newstage.args.push_back(arg4);
+        newstage.args.push_back(arg5);
+        stages_.push_back(newstage);
+    }
+
+    /*!
+     * Add an exec() stage to the pipe with given arguments. Note that argv[0]
+     * is set to prog.
+     */
+    void add_exec(const char* prog, const char* arg1, const char* arg2,
+                  const char* arg3, const char* arg4, const char* arg5,
+                  const char* arg6) {
+        Stage newstage;
+        newstage.prog = prog;
+        newstage.args.push_back(prog);
+        newstage.args.push_back(arg1);
+        newstage.args.push_back(arg2);
+        newstage.args.push_back(arg3);
+        newstage.args.push_back(arg4);
+        newstage.args.push_back(arg5);
+        newstage.args.push_back(arg6);
+        stages_.push_back(newstage);
+    }
+
+    /*!
+     * Add an exec() stage to the pipe with given arguments. Note that argv[0]
+     * is set to prog.
+     */
+    void add_exec(const char* prog, const char* arg1, const char* arg2,
+                  const char* arg3, const char* arg4, const char* arg5,
+                  const char* arg6, const char* arg7) {
+        Stage newstage;
+        newstage.prog = prog;
+        newstage.args.push_back(prog);
+        newstage.args.push_back(arg1);
+        newstage.args.push_back(arg2);
+        newstage.args.push_back(arg3);
+        newstage.args.push_back(arg4);
+        newstage.args.push_back(arg5);
+        newstage.args.push_back(arg6);
+        newstage.args.push_back(arg7);
+        stages_.push_back(newstage);
+    }
+
+    /*!
+     * Add an exec() stage to the pipe with given arguments. Note that argv[0]
+     * is set to prog.
+     */
+    void add_exec(const char* prog, const char* arg1, const char* arg2,
+                  const char* arg3, const char* arg4, const char* arg5,
+                  const char* arg6, const char* arg7, const char* arg8) {
+        Stage newstage;
+        newstage.prog = prog;
+        newstage.args.push_back(prog);
+        newstage.args.push_back(arg1);
+        newstage.args.push_back(arg2);
+        newstage.args.push_back(arg3);
+        newstage.args.push_back(arg4);
+        newstage.args.push_back(arg5);
+        newstage.args.push_back(arg6);
+        newstage.args.push_back(arg7);
+        newstage.args.push_back(arg8);
         stages_.push_back(newstage);
     }
 
@@ -695,7 +791,7 @@ public:
         assert(args->size() > 0);
         if (args->size() == 0) return;
 
-        struct Stage newstage;
+        Stage newstage;
         newstage.prog = (*args)[0].c_str();
         newstage.argsp = args;
         stages_.push_back(newstage);
@@ -707,7 +803,7 @@ public:
      * argv[0] is set to prog.
      */
     void add_execp(const char* prog) {
-        struct Stage newstage;
+        Stage newstage;
         newstage.prog = prog;
         newstage.args.push_back(prog);
         newstage.withpath = true;
@@ -720,7 +816,7 @@ public:
      * argv[0] is set to prog.
      */
     void add_execp(const char* prog, const char* arg1) {
-        struct Stage newstage;
+        Stage newstage;
         newstage.prog = prog;
         newstage.args.push_back(prog);
         newstage.args.push_back(arg1);
@@ -734,7 +830,7 @@ public:
      * argv[0] is set to prog.
      */
     void add_execp(const char* prog, const char* arg1, const char* arg2) {
-        struct Stage newstage;
+        Stage newstage;
         newstage.prog = prog;
         newstage.args.push_back(prog);
         newstage.args.push_back(arg1);
@@ -750,12 +846,115 @@ public:
      */
     void add_execp(const char* prog, const char* arg1, const char* arg2,
                    const char* arg3) {
-        struct Stage newstage;
+        Stage newstage;
         newstage.prog = prog;
         newstage.args.push_back(prog);
         newstage.args.push_back(arg1);
         newstage.args.push_back(arg2);
         newstage.args.push_back(arg3);
+        newstage.withpath = true;
+        stages_.push_back(newstage);
+    }
+
+    /*!
+     * Add an execp() stage to the pipe with given arguments. The PATH variable
+     * is search for programs not containing a slash / character. Note that
+     * argv[0] is set to prog.
+     */
+    void add_execp(const char* prog, const char* arg1, const char* arg2,
+                   const char* arg3, const char* arg4) {
+        Stage newstage;
+        newstage.prog = prog;
+        newstage.args.push_back(prog);
+        newstage.args.push_back(arg1);
+        newstage.args.push_back(arg2);
+        newstage.args.push_back(arg3);
+        newstage.args.push_back(arg4);
+        newstage.withpath = true;
+        stages_.push_back(newstage);
+    }
+
+    /*!
+     * Add an execp() stage to the pipe with given arguments. The PATH variable
+     * is search for programs not containing a slash / character. Note that
+     * argv[0] is set to prog.
+     */
+    void add_execp(const char* prog, const char* arg1, const char* arg2,
+                   const char* arg3, const char* arg4, const char* arg5) {
+        Stage newstage;
+        newstage.prog = prog;
+        newstage.args.push_back(prog);
+        newstage.args.push_back(arg1);
+        newstage.args.push_back(arg2);
+        newstage.args.push_back(arg3);
+        newstage.args.push_back(arg4);
+        newstage.args.push_back(arg5);
+        newstage.withpath = true;
+        stages_.push_back(newstage);
+    }
+
+    /*!
+     * Add an execp() stage to the pipe with given arguments. The PATH variable
+     * is search for programs not containing a slash / character. Note that
+     * argv[0] is set to prog.
+     */
+    void add_execp(const char* prog, const char* arg1, const char* arg2,
+                   const char* arg3, const char* arg4, const char* arg5,
+                   const char* arg6) {
+        Stage newstage;
+        newstage.prog = prog;
+        newstage.args.push_back(prog);
+        newstage.args.push_back(arg1);
+        newstage.args.push_back(arg2);
+        newstage.args.push_back(arg3);
+        newstage.args.push_back(arg4);
+        newstage.args.push_back(arg5);
+        newstage.args.push_back(arg6);
+        newstage.withpath = true;
+        stages_.push_back(newstage);
+    }
+
+    /*!
+     * Add an execp() stage to the pipe with given arguments. The PATH variable
+     * is search for programs not containing a slash / character. Note that
+     * argv[0] is set to prog.
+     */
+    void add_execp(const char* prog, const char* arg1, const char* arg2,
+                   const char* arg3, const char* arg4, const char* arg5,
+                   const char* arg6, const char* arg7) {
+        Stage newstage;
+        newstage.prog = prog;
+        newstage.args.push_back(prog);
+        newstage.args.push_back(arg1);
+        newstage.args.push_back(arg2);
+        newstage.args.push_back(arg3);
+        newstage.args.push_back(arg4);
+        newstage.args.push_back(arg5);
+        newstage.args.push_back(arg6);
+        newstage.args.push_back(arg7);
+        newstage.withpath = true;
+        stages_.push_back(newstage);
+    }
+
+    /*!
+     * Add an execp() stage to the pipe with given arguments. The PATH variable
+     * is search for programs not containing a slash / character. Note that
+     * argv[0] is set to prog.
+     */
+    void add_execp(const char* prog, const char* arg1, const char* arg2,
+                   const char* arg3, const char* arg4, const char* arg5,
+                   const char* arg6, const char* arg7, const char* arg8) {
+        Stage newstage;
+        newstage.prog = prog;
+        newstage.args.push_back(prog);
+        newstage.args.push_back(arg1);
+        newstage.args.push_back(arg2);
+        newstage.args.push_back(arg3);
+        newstage.args.push_back(arg4);
+        newstage.args.push_back(arg5);
+        newstage.args.push_back(arg6);
+        newstage.args.push_back(arg7);
+        newstage.args.push_back(arg8);
         newstage.withpath = true;
         stages_.push_back(newstage);
     }
@@ -770,7 +969,7 @@ public:
         assert(args->size() > 0);
         if (args->size() == 0) return;
 
-        struct Stage newstage;
+        Stage newstage;
         newstage.prog = (*args)[0].c_str();
         newstage.argsp = args;
         newstage.withpath = true;
@@ -792,7 +991,7 @@ public:
         assert(argsp->size() > 0);
         if (argsp->size() == 0) return;
 
-        struct Stage newstage;
+        Stage newstage;
         newstage.prog = path;
         newstage.argsp = argsp;
         newstage.envp = envp;
@@ -811,7 +1010,7 @@ public:
         func->impl_ = this;
         func->stage_id_ = stages_.size();
 
-        struct Stage newstage;
+        Stage newstage;
         newstage.func = func;
         stages_.push_back(newstage);
     }
@@ -824,7 +1023,6 @@ public:
      */
     void stage_function_write(size_t st, const void* data, size_t size) {
         assert(st < stages_.size());
-
         return stages_[st].outbuffer.write(data, size);
     }
 
@@ -853,7 +1051,7 @@ public:
         assert(stage_id < stages_.size());
         assert(!stages_[stage_id].func);
 
-        return stages_[stage_id].retstatus;
+        return stages_[stage_id].ret_status;
     }
 
     /*!
@@ -864,8 +1062,9 @@ public:
         assert(stage_id < stages_.size());
         assert(!stages_[stage_id].func);
 
-        if (WIFEXITED(stages_[stage_id].retstatus))
-            return WEXITSTATUS(stages_[stage_id].retstatus);
+        int r = stages_[stage_id].ret_status;
+        if (WIFEXITED(r))
+            return WEXITSTATUS(r);
         else
             return -1;
     }
@@ -878,8 +1077,9 @@ public:
         assert(stage_id < stages_.size());
         assert(!stages_[stage_id].func);
 
-        if (WIFSIGNALED(stages_[stage_id].retstatus))
-            return WTERMSIG(stages_[stage_id].retstatus);
+        int r = stages_[stage_id].ret_status;
+        if (WIFSIGNALED(r))
+            return WTERMSIG(r);
         else
             return -1;
     }
@@ -902,7 +1102,7 @@ public:
     //! \}
 
 protected:
-    //! \name Helper Function for run()
+    //! \name Helper Functions for run()
     //! \{
 
     //! Transform arguments and launch an exec stage using the correct exec()
@@ -927,36 +1127,33 @@ protected:
 void ExecPipeImpl::print_exec(const std::vector<std::string>& args) {
     std::ostringstream oss;
     oss << "Exec()";
-    for (unsigned ai = 0; ai < args.size(); ++ai)
-    {
-        oss << " " << args[ai];
+    for (unsigned ai = 0; ai < args.size(); ++ai) {
+        oss << ' ' << args[ai];
     }
     LOG_INFO(oss.str());
 }
 
 void ExecPipeImpl::exec_stage(const Stage& stage) {
     // select arguments vector
-    const std::vector<std::string>& args = stage.argsp ? *stage.argsp : stage.args;
+    const std::vector<std::string>& args
+        = stage.argsp ? *stage.argsp : stage.args;
 
     // create const char*[] of prog and arguments for syscall.
 
     const char* cargs[args.size() + 1];
 
-    for (unsigned ai = 0; ai < args.size(); ++ai)
-    {
+    for (unsigned ai = 0; ai < args.size(); ++ai) {
         cargs[ai] = args[ai].c_str();
     }
     cargs[args.size()] = nullptr;
 
-    if (!stage.envp)
-    {
+    if (!stage.envp) {
         if (stage.withpath)
             execvp(stage.prog, const_cast<char* const*>(cargs));
         else
             execv(stage.prog, const_cast<char* const*>(cargs));
     }
-    else
-    {
+    else {
         // create envp const char*[] for syscall.
 
         const char* cenv[args.size() + 1];
@@ -1088,7 +1285,8 @@ void ExecPipeImpl::run() {
     case ST_FILE: {
         // create or truncate output file
 
-        int outfd = open(output_file_, O_WRONLY | O_CREAT | O_TRUNC, output_file_mode_);
+        int outfd = open(
+            output_file_, O_WRONLY | O_CREAT | O_TRUNC, output_file_mode_);
         if (outfd < 0)
             throw_with_errno("Could not open output file");
 
@@ -1123,12 +1321,14 @@ void ExecPipeImpl::run() {
             {
                 if (i == j)
                 {
-                    // dup2 file descriptors assigned for this stage as stdin and stdout
+                    // dup2 file descriptors assigned for this stage as stdin
+                    // and stdout
 
                     if (stages_[i].stdin_fd >= 0)
                     {
                         if (dup2(stages_[i].stdin_fd, STDIN_FILENO) == -1) {
-                            LOG_ERROR("Could not redirect file descriptor: " << strerror(errno));
+                            LOG_ERROR("Could not redirect file descriptor: " <<
+                                      strerror(errno));
                             exit(255);
                         }
                     }
@@ -1136,7 +1336,8 @@ void ExecPipeImpl::run() {
                     if (stages_[i].stdout_fd >= 0)
                     {
                         if (dup2(stages_[i].stdout_fd, STDOUT_FILENO) == -1) {
-                            LOG_ERROR("Could not redirect file descriptor: " << strerror(errno));
+                            LOG_ERROR("Could not redirect file descriptor: " <<
+                                      strerror(errno));
                             exit(255);
                         }
                     }
@@ -1197,12 +1398,14 @@ void ExecPipeImpl::run() {
             {
                 assert(input_source_);
 
-                if (!input_rbuffer_.size() && !input_source_->poll() && !input_rbuffer_.size())
+                if (!input_rbuffer_.size() && !input_source_->poll() &&
+                    !input_rbuffer_.size())
                 {
                     sclose(input_fd_);
                     input_fd_ = -1;
 
-                    LOG_INFO("Closing input file descriptor: " << strerror(errno));
+                    LOG_INFO("Closing input file descriptor: " <<
+                             strerror(errno));
                 }
                 else
                 {
@@ -1228,7 +1431,8 @@ void ExecPipeImpl::run() {
             if (stages_[i].stdin_fd >= 0)
             {
                 FD_SET(stages_[i].stdin_fd, &read_fds);
-                if (max_fds < stages_[i].stdin_fd) max_fds = stages_[i].stdin_fd;
+                if (max_fds < stages_[i].stdin_fd)
+                    max_fds = stages_[i].stdin_fd;
 
                 LOG_DEBUG("Select on stage input file descriptor");
             }
@@ -1238,11 +1442,13 @@ void ExecPipeImpl::run() {
                 if (stages_[i].outbuffer.size())
                 {
                     FD_SET(stages_[i].stdout_fd, &write_fds);
-                    if (max_fds < stages_[i].stdout_fd) max_fds = stages_[i].stdout_fd;
+                    if (max_fds < stages_[i].stdout_fd)
+                        max_fds = stages_[i].stdout_fd;
 
                     LOG_DEBUG("Select on stage output file descriptor");
                 }
-                else if (stages_[i].stdin_fd < 0 && !stages_[i].outbuffer.size())
+                else if (stages_[i].stdin_fd < 0 &&
+                         !stages_[i].outbuffer.size())
                 {
                     sclose(stages_[i].stdout_fd);
                     stages_[i].stdout_fd = -1;
@@ -1265,11 +1471,13 @@ void ExecPipeImpl::run() {
         if (max_fds < 0)
             break;
 
-        int retval = select(max_fds + 1, &read_fds, &write_fds, nullptr, nullptr);
+        int retval = select(
+            max_fds + 1, &read_fds, &write_fds, nullptr, nullptr);
         if (retval < 0)
             throw_with_errno("Error during select() on file descriptors");
 
-        LOG_TRACE("select() on " << retval << " file descriptors: " << strerror(errno));
+        LOG_TRACE("select() on " << retval <<
+                  " file descriptors: " << strerror(errno));
 
         // handle file descriptors marked by select() in both sets
 
@@ -1284,8 +1492,7 @@ void ExecPipeImpl::run() {
 
                 ssize_t wb;
 
-                do
-                {
+                do {
                     wb = write(input_fd_,
                                input_string_->data() + input_string_pos_,
                                input_string_->size() - input_string_pos_);
@@ -1294,16 +1501,20 @@ void ExecPipeImpl::run() {
 
                     if (wb < 0)
                     {
-                        if (errno == EAGAIN || errno == EINTR)
-                        { }
+                        if (errno == EAGAIN || errno == EINTR) {
+                            /* retry */
+                        }
                         else
                         {
-                            LOG_DEBUG("Error writing to input file descriptor: " << strerror(errno));
+                            LOG_DEBUG(
+                                "Error writing to input file descriptor: " <<
+                                    strerror(errno));
 
                             sclose(input_fd_);
                             input_fd_ = -1;
 
-                            LOG_INFO("Closing input file descriptor: " << strerror(errno));
+                            LOG_INFO("Closing input file descriptor: " <<
+                                     strerror(errno));
                         }
                     }
                     else if (wb > 0)
@@ -1315,7 +1526,8 @@ void ExecPipeImpl::run() {
                             sclose(input_fd_);
                             input_fd_ = -1;
 
-                            LOG_INFO("Closing input file descriptor: " << strerror(errno));
+                            LOG_INFO("Closing input file descriptor: " <<
+                                     strerror(errno));
                             break;
                         }
                     }
@@ -1327,8 +1539,7 @@ void ExecPipeImpl::run() {
 
                 ssize_t wb;
 
-                do
-                {
+                do {
                     wb = write(input_fd_,
                                input_rbuffer_.bottom(),
                                input_rbuffer_.bottom_size());
@@ -1337,16 +1548,20 @@ void ExecPipeImpl::run() {
 
                     if (wb < 0)
                     {
-                        if (errno == EAGAIN || errno == EINTR)
-                        { }
+                        if (errno == EAGAIN || errno == EINTR) {
+                            /* retry */
+                        }
                         else
                         {
-                            LOG_INFO("Error writing to input file descriptor: " << strerror(errno));
+                            LOG_INFO(
+                                "Error writing to input file descriptor: " <<
+                                    strerror(errno));
 
                             sclose(input_fd_);
                             input_fd_ = -1;
 
-                            LOG_INFO("Closing input file descriptor: " << strerror(errno));
+                            LOG_INFO("Closing input file descriptor: " <<
+                                     strerror(errno));
                         }
                     }
                     else if (wb > 0)
@@ -1363,8 +1578,7 @@ void ExecPipeImpl::run() {
 
             ssize_t rb;
 
-            do
-            {
+            do {
                 errno = 0;
 
                 rb = read(output_fd_,
@@ -1372,13 +1586,12 @@ void ExecPipeImpl::run() {
 
                 LOG_TRACE("Read on output fd: " << rb);
 
-                if (rb <= 0)
-                {
-                    if (rb == 0 && errno == 0)
-                    {
+                if (rb <= 0) {
+                    if (rb == 0 && errno == 0) {
                         // zero read indicates eof
 
-                        LOG_INFO("Closing output file descriptor: " << strerror(errno));
+                        LOG_INFO("Closing output file descriptor: " <<
+                                 strerror(errno));
 
                         if (output_ == ST_OBJECT)
                         {
@@ -1389,22 +1602,21 @@ void ExecPipeImpl::run() {
                         sclose(output_fd_);
                         output_fd_ = -1;
                     }
-                    else if (errno == EAGAIN || errno == EINTR)
-                    { }
-                    else
-                    {
-                        LOG_ERROR("Error reading from output file descriptor: " << strerror(errno));
+                    else if (errno == EAGAIN || errno == EINTR) {
+                        /* retry */
+                    }
+                    else {
+                        LOG_ERROR(
+                            "Error reading from output file descriptor: " <<
+                                strerror(errno));
                     }
                 }
-                else
-                {
-                    if (output_ == ST_STRING)
-                    {
+                else {
+                    if (output_ == ST_STRING) {
                         assert(output_string_);
                         output_string_->append(buffer_, rb);
                     }
-                    else if (output_ == ST_OBJECT)
-                    {
+                    else if (output_ == ST_OBJECT) {
                         assert(output_sink_);
                         output_sink_->process(buffer_, rb);
                     }
@@ -1416,12 +1628,12 @@ void ExecPipeImpl::run() {
         {
             if (!stages_[i].func) continue;
 
-            if (stages_[i].stdin_fd >= 0 && FD_ISSET(stages_[i].stdin_fd, &read_fds))
+            if (stages_[i].stdin_fd >= 0 &&
+                FD_ISSET(stages_[i].stdin_fd, &read_fds))
             {
                 ssize_t rb;
 
-                do
-                {
+                do {
                     errno = 0;
 
                     rb = read(stages_[i].stdin_fd,
@@ -1429,34 +1641,35 @@ void ExecPipeImpl::run() {
 
                     LOG_TRACE("Read on stage fd: " << rb);
 
-                    if (rb <= 0)
-                    {
-                        if (rb == 0 && errno == 0)
-                        {
+                    if (rb <= 0) {
+                        if (rb == 0 && errno == 0) {
                             // zero read indicates eof
 
-                            LOG_INFO("Closing stage input file descriptor: " << strerror(errno));
+                            LOG_INFO("Closing stage input file descriptor: " <<
+                                     strerror(errno));
 
                             stages_[i].func->eof();
 
                             sclose(stages_[i].stdin_fd);
                             stages_[i].stdin_fd = -1;
                         }
-                        else if (errno == EAGAIN || errno == EINTR)
-                        { }
-                        else
-                        {
-                            LOG_ERROR("Error reading from stage input file descriptor: " << strerror(errno));
+                        else if (errno == EAGAIN || errno == EINTR) {
+                            /* retry */
+                        }
+                        else {
+                            LOG_ERROR(
+                                "Error reading from stage input file descriptor: " <<
+                                    strerror(errno));
                         }
                     }
-                    else
-                    {
+                    else {
                         stages_[i].func->process(buffer_, rb);
                     }
                 } while (rb > 0);
             }
 
-            if (stages_[i].stdout_fd >= 0 && FD_ISSET(stages_[i].stdout_fd, &write_fds))
+            if (stages_[i].stdout_fd >= 0 &&
+                FD_ISSET(stages_[i].stdout_fd, &write_fds))
             {
                 while (stages_[i].outbuffer.size() > 0)
                 {
@@ -1466,13 +1679,14 @@ void ExecPipeImpl::run() {
 
                     LOG_TRACE("Write on stage fd: " << wb);
 
-                    if (wb < 0)
-                    {
-                        if (errno == EAGAIN || errno == EINTR)
-                        { }
-                        else
-                        {
-                            LOG_INFO("Error writing to stage output file descriptor: " << strerror(errno));
+                    if (wb < 0) {
+                        if (errno == EAGAIN || errno == EINTR) {
+                            /* retry */
+                        }
+                        else {
+                            LOG_INFO(
+                                "Error writing to stage output file descriptor: " <<
+                                    strerror(errno));
                         }
                         break;
                     }
@@ -1484,7 +1698,8 @@ void ExecPipeImpl::run() {
 
                 if (stages_[i].stdin_fd < 0 && !stages_[i].outbuffer.size())
                 {
-                    LOG_INFO("Closing stage output file descriptor: " << strerror(errno));
+                    LOG_INFO("Closing stage output file descriptor: " <<
+                             strerror(errno));
 
                     sclose(stages_[i].stdout_fd);
                     stages_[i].stdout_fd = -1;
@@ -1520,15 +1735,17 @@ void ExecPipeImpl::run() {
         {
             if (p == stages_[i].pid)
             {
-                stages_[i].retstatus = status;
+                stages_[i].ret_status = status;
 
                 if (WIFEXITED(status))
                 {
-                    LOG_INFO("Finished exec() stage " << p << " with retcode " << WEXITSTATUS(status));
+                    LOG_INFO("Finished exec() stage " << p <<
+                             " with retcode " << WEXITSTATUS(status));
                 }
                 else if (WIFSIGNALED(status))
                 {
-                    LOG_INFO("Finished exec() stage " << p << " with signal " << WTERMSIG(status));
+                    LOG_INFO("Finished exec() stage " << p <<
+                             " with signal " << WTERMSIG(status));
                 }
                 else
                 {
@@ -1641,6 +1858,35 @@ void ExecPipe::add_exec(const char* prog, const char* arg1, const char* arg2,
     return impl_->add_exec(prog, arg1, arg2, arg3);
 }
 
+void ExecPipe::add_exec(const char* prog, const char* arg1, const char* arg2,
+                        const char* arg3, const char* arg4) {
+    return impl_->add_exec(prog, arg1, arg2, arg3, arg4);
+}
+
+void ExecPipe::add_exec(const char* prog, const char* arg1, const char* arg2,
+                        const char* arg3, const char* arg4, const char* arg5) {
+    return impl_->add_exec(prog, arg1, arg2, arg3, arg4, arg5);
+}
+
+void ExecPipe::add_exec(const char* prog, const char* arg1, const char* arg2,
+                        const char* arg3, const char* arg4, const char* arg5,
+                        const char* arg6) {
+    return impl_->add_exec(prog, arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
+void ExecPipe::add_exec(const char* prog, const char* arg1, const char* arg2,
+                        const char* arg3, const char* arg4, const char* arg5,
+                        const char* arg6, const char* arg7) {
+    return impl_->add_exec(prog, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+}
+
+void ExecPipe::add_exec(const char* prog, const char* arg1, const char* arg2,
+                        const char* arg3, const char* arg4, const char* arg5,
+                        const char* arg6, const char* arg7, const char* arg8) {
+    return impl_->add_exec(prog, arg1, arg2, arg3, arg4,
+                           arg5, arg6, arg7, arg8);
+}
+
 void ExecPipe::add_exec(const std::vector<std::string>* args) {
     return impl_->add_exec(args);
 }
@@ -1660,6 +1906,35 @@ void ExecPipe::add_execp(const char* prog, const char* arg1, const char* arg2) {
 void ExecPipe::add_execp(const char* prog, const char* arg1, const char* arg2,
                          const char* arg3) {
     return impl_->add_execp(prog, arg1, arg2, arg3);
+}
+
+void ExecPipe::add_execp(const char* prog, const char* arg1, const char* arg2,
+                         const char* arg3, const char* arg4) {
+    return impl_->add_execp(prog, arg1, arg2, arg3, arg4);
+}
+
+void ExecPipe::add_execp(const char* prog, const char* arg1, const char* arg2,
+                         const char* arg3, const char* arg4, const char* arg5) {
+    return impl_->add_execp(prog, arg1, arg2, arg3, arg4, arg5);
+}
+
+void ExecPipe::add_execp(const char* prog, const char* arg1, const char* arg2,
+                         const char* arg3, const char* arg4, const char* arg5,
+                         const char* arg6) {
+    return impl_->add_execp(prog, arg1, arg2, arg3, arg4, arg5, arg6);
+}
+
+void ExecPipe::add_execp(const char* prog, const char* arg1, const char* arg2,
+                         const char* arg3, const char* arg4, const char* arg5,
+                         const char* arg6, const char* arg7) {
+    return impl_->add_execp(prog, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+}
+
+void ExecPipe::add_execp(const char* prog, const char* arg1, const char* arg2,
+                         const char* arg3, const char* arg4, const char* arg5,
+                         const char* arg6, const char* arg7, const char* arg8) {
+    return impl_->add_execp(prog, arg1, arg2, arg3, arg4,
+                            arg5, arg6, arg7, arg8);
 }
 
 void ExecPipe::add_execp(const std::vector<std::string>* args) {
