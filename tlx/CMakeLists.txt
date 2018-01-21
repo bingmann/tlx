@@ -10,12 +10,14 @@
 set(LIBTLX_SOURCES
 
   backtrace.cpp
+  byte_ring_buffer.cpp
   cmdline_parser.cpp
   die.cpp
   digest/md5.cpp
   digest/sha1.cpp
   digest/sha256.cpp
   digest/sha512.cpp
+  exec_pipe.cpp
   logger.cpp
   math/integer_log2.cpp
   math/is_power_of_two.cpp
