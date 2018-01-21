@@ -261,6 +261,44 @@ public:
                   const char* arg3);
 
     /*!
+     * Add an exec() stage to the pipe with given arguments. Note that argv[0]
+     * is set to prog.
+     */
+    void add_exec(const char* prog, const char* arg1, const char* arg2,
+                  const char* arg3, const char* arg4);
+
+    /*!
+     * Add an exec() stage to the pipe with given arguments. Note that argv[0]
+     * is set to prog.
+     */
+    void add_exec(const char* prog, const char* arg1, const char* arg2,
+                  const char* arg3, const char* arg4, const char* arg5);
+
+    /*!
+     * Add an exec() stage to the pipe with given arguments. Note that argv[0]
+     * is set to prog.
+     */
+    void add_exec(const char* prog, const char* arg1, const char* arg2,
+                  const char* arg3, const char* arg4, const char* arg5,
+                  const char* arg6);
+
+    /*!
+     * Add an exec() stage to the pipe with given arguments. Note that argv[0]
+     * is set to prog.
+     */
+    void add_exec(const char* prog, const char* arg1, const char* arg2,
+                  const char* arg3, const char* arg4, const char* arg5,
+                  const char* arg6, const char* arg7);
+
+    /*!
+     * Add an exec() stage to the pipe with given arguments. Note that argv[0]
+     * is set to prog.
+     */
+    void add_exec(const char* prog, const char* arg1, const char* arg2,
+                  const char* arg3, const char* arg4, const char* arg5,
+                  const char* arg6, const char* arg7, const char* arg8);
+
+    /*!
      * Add an exec() stage to the pipe with given arguments. The vector of
      * arguments is not copied, so it must still exist when run() is called.
      * Note that the program called is args[0].
@@ -295,6 +333,49 @@ public:
      */
     void add_execp(const char* prog, const char* arg1, const char* arg2,
                    const char* arg3);
+
+    /*!
+     * Add an execp() stage to the pipe with given arguments. The PATH variable
+     * is search for programs not containing a slash / character. Note that
+     * argv[0] is set to prog.
+     */
+    void add_execp(const char* prog, const char* arg1, const char* arg2,
+                   const char* arg3, const char* arg4);
+
+    /*!
+     * Add an execp() stage to the pipe with given arguments. The PATH variable
+     * is search for programs not containing a slash / character. Note that
+     * argv[0] is set to prog.
+     */
+    void add_execp(const char* prog, const char* arg1, const char* arg2,
+                   const char* arg3, const char* arg4, const char* arg5);
+
+    /*!
+     * Add an execp() stage to the pipe with given arguments. The PATH variable
+     * is search for programs not containing a slash / character. Note that
+     * argv[0] is set to prog.
+     */
+    void add_execp(const char* prog, const char* arg1, const char* arg2,
+                   const char* arg3, const char* arg4, const char* arg5,
+                   const char* arg6);
+
+    /*!
+     * Add an execp() stage to the pipe with given arguments. The PATH variable
+     * is search for programs not containing a slash / character. Note that
+     * argv[0] is set to prog.
+     */
+    void add_execp(const char* prog, const char* arg1, const char* arg2,
+                   const char* arg3, const char* arg4, const char* arg5,
+                   const char* arg6, const char* arg7);
+
+    /*!
+     * Add an execp() stage to the pipe with given arguments. The PATH variable
+     * is search for programs not containing a slash / character. Note that
+     * argv[0] is set to prog.
+     */
+    void add_execp(const char* prog, const char* arg1, const char* arg2,
+                   const char* arg3, const char* arg4, const char* arg5,
+                   const char* arg6, const char* arg7, const char* arg8);
 
     /*!
      * Add an execp() stage to the pipe with given arguments. The PATH variable

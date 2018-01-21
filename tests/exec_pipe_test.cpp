@@ -236,14 +236,14 @@ void test_none_program_set_string() {
     tlx::ExecPipe ep;
 
     std::vector<std::string> args;
-    args.push_back("/bin/sh");
+    args.push_back("/bin/bash");
     args.push_back("-c");
     args.push_back("set");
 
     std::vector<std::string> envs;
     envs.push_back("TEST=123");
 
-    ep.add_exece("/bin/sh", &args, &envs);
+    ep.add_exece("/bin/bash", &args, &envs);
 
     std::string output;
     ep.set_output_string(&output);
