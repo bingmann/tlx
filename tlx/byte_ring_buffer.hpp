@@ -59,6 +59,12 @@ public:
     //! Construct an empty ring buffer.
     ByteRingBuffer();
 
+    //! Copy constructor
+    ByteRingBuffer(const ByteRingBuffer& b);
+
+    //! Move constructor
+    ByteRingBuffer(ByteRingBuffer&& b);
+
     //! Free the possibly used memory space.
     ~ByteRingBuffer();
 

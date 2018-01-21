@@ -18,6 +18,28 @@ namespace tlx {
 ByteRingBuffer::ByteRingBuffer()
     : data_(nullptr), buff_size_(0), size_(0), bottom_(0) { }
 
+ByteRingBuffer::ByteRingBuffer(const ByteRingBuffer& b)
+    : data_(b.data_ ? static_cast<char*>(malloc(b.buff_size_)) : nullptr),
+      buff_size_(b.buff_size_), size_(b.size_), bottom_(b.bottom_) {
+
+    if (bottom_ + size_ <= buff_size_) {
+        std::copy(b.data_ + bottom_, b.data_ + bottom_ + size_,
+                  data_ + bottom_);
+    }
+    else {
+        std::copy(b.data_ + bottom_, b.data_ + buff_size_,
+                  data_ + bottom_);
+        std::copy(b.data_, b.data_ + bottom_ + size_ - buff_size_,
+                  data_);
+    }
+}
+
+ByteRingBuffer::ByteRingBuffer(ByteRingBuffer&& b)
+    : data_(b.data_),
+      buff_size_(b.buff_size_), size_(b.size_), bottom_(b.bottom_) {
+    b.data_ = nullptr;
+}
+
 ByteRingBuffer::~ByteRingBuffer() {
     if (data_) free(data_);
 }
@@ -61,14 +83,14 @@ void ByteRingBuffer::write(const void* src, size_t len) {
         // won't fit, we have to grow the buffer, we'll grow the buffer to
         // twice the size.
 
-        size_t newbuffsize = buff_size_;
-        while (newbuffsize < size_ + len)
+        size_t new_buff_size = buff_size_;
+        while (new_buff_size < size_ + len)
         {
-            if (newbuffsize == 0) newbuffsize = 1024;
-            else newbuffsize = newbuffsize * 2;
+            if (new_buff_size == 0) new_buff_size = 1024;
+            else new_buff_size = new_buff_size * 2;
         }
 
-        data_ = static_cast<char*>(realloc(data_, newbuffsize));
+        data_ = static_cast<char*>(realloc(data_, new_buff_size));
 
         if (bottom_ + size_ > buff_size_)
         {
@@ -78,12 +100,12 @@ void ByteRingBuffer::write(const void* src, size_t len) {
             size_t taillen = buff_size_ - bottom_;
 
             std::copy(data_ + bottom_, data_ + bottom_ + taillen,
-                      data_ + newbuffsize - taillen);
+                      data_ + new_buff_size - taillen);
 
-            bottom_ = newbuffsize - taillen;
+            bottom_ = new_buff_size - taillen;
         }
 
-        buff_size_ = newbuffsize;
+        buff_size_ = new_buff_size;
     }
 
     // block now fits into the buffer somehow
