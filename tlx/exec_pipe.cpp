@@ -28,7 +28,6 @@
 #include <fcntl.h>
 #include <iostream>
 #include <sstream>
-#include <stdexcept>
 
 #include <sys/select.h>
 #include <sys/types.h>
@@ -193,14 +192,13 @@ descriptors, launch all children programs, wait until these finish and
 concurrently process data passed between parent and children.
 
 If any system calls fail while running the pipe, the `run()` function will
-`throw()` a `std::runtime_error` exception. So wrap `run()` in a try-catch
-block.
+`throw()` a ExecPipeError exception. So wrap `run()` in a try-catch block.
 
 \code
 try {
     ep.run();
 }
-catch (std::runtime_error &e) {
+catch (tlx::ExecPipeError &e) {
     std::cerr << "Pipe execution failed: " << e.what() << std::endl;
 }
 \endcode
@@ -917,6 +915,9 @@ protected:
     //! Safe close() call and output error if fd was already closed.
     void sclose(int fd);
 
+    //! Throw ExecPipeError after appending strerror(errno).
+    void throw_with_errno(const std::string& msg);
+
     //! \}
 };
 
@@ -981,12 +982,16 @@ void ExecPipeImpl::sclose(int fd) {
     }
 }
 
+void ExecPipeImpl::throw_with_errno(const std::string& msg) {
+    throw ExecPipeError(msg + ": " + strerror(errno));
+}
+
 /*----------------------------------------------------------------------------*/
 // ExecPipeImpl::run()
 
 void ExecPipeImpl::run() {
     if (stages_.size() == 0)
-        throw (std::runtime_error("No stages to in exec pipe."));
+        throw ExecPipeError("No stages to in exec pipe.");
 
     // *** Phase 1: prepare all file descriptors ************************* //
 
@@ -1004,10 +1009,10 @@ void ExecPipeImpl::run() {
         int pipefd[2];
 
         if (pipe(pipefd) != 0)
-            throw (std::runtime_error(std::string("Could not create an input pipe: ") + strerror(errno)));
+            throw_with_errno("Could not create an input pipe");
 
         if (fcntl(pipefd[1], F_SETFL, O_NONBLOCK) != 0)
-            throw (std::runtime_error(std::string("Could not set non-block mode on input pipe: ") + strerror(errno)));
+            throw_with_errno("Could not set non-block mode on input pipe");
 
         input_fd_ = pipefd[1];
         stages_[0].stdin_fd = pipefd[0];
@@ -1018,7 +1023,7 @@ void ExecPipeImpl::run() {
 
         int infd = open(input_file_, O_RDONLY);
         if (infd < 0)
-            throw (std::runtime_error(std::string("Could not open input file: ") + strerror(errno)));
+            throw_with_errno("Could not open input file");
 
         stages_[0].stdin_fd = infd;
         break;
@@ -1036,20 +1041,24 @@ void ExecPipeImpl::run() {
         int pipefd[2];
 
         if (pipe(pipefd) != 0)
-            throw (std::runtime_error(std::string("Could not create a stage pipe: ") + strerror(errno)));
+            throw_with_errno("Could not create a stage pipe");
 
         stages_[i].stdout_fd = pipefd[1];
         stages_[i + 1].stdin_fd = pipefd[0];
 
         if (stages_[i].func)
         {
-            if (fcntl(stages_[i].stdout_fd, F_SETFL, O_NONBLOCK) != 0)
-                throw (std::runtime_error(std::string("Could not set non-block mode on a stage pipe: ") + strerror(errno)));
+            if (fcntl(stages_[i].stdout_fd, F_SETFL, O_NONBLOCK) != 0) {
+                throw_with_errno(
+                    "Could not set non-block mode on a stage pipe");
+            }
         }
         if (stages_[i + 1].func)
         {
-            if (fcntl(stages_[i + 1].stdin_fd, F_SETFL, O_NONBLOCK) != 0)
-                throw (std::runtime_error(std::string("Could not set non-block mode on a stage pipe: ") + strerror(errno)));
+            if (fcntl(stages_[i + 1].stdin_fd, F_SETFL, O_NONBLOCK) != 0) {
+                throw_with_errno(
+                    "Could not set non-block mode on a stage pipe");
+            }
         }
     }
 
@@ -1067,10 +1076,10 @@ void ExecPipeImpl::run() {
         int pipefd[2];
 
         if (pipe(pipefd) != 0)
-            throw (std::runtime_error(std::string("Could not create an output pipe: ") + strerror(errno)));
+            throw_with_errno("Could not create an output pipe");
 
         if (fcntl(pipefd[0], F_SETFL, O_NONBLOCK) != 0)
-            throw (std::runtime_error(std::string("Could not set non-block mode on output pipe: ") + strerror(errno)));
+            throw_with_errno("Could not set non-block mode on output pipe");
 
         stages_.back().stdout_fd = pipefd[1];
         output_fd_ = pipefd[0];
@@ -1081,7 +1090,7 @@ void ExecPipeImpl::run() {
 
         int outfd = open(output_file_, O_WRONLY | O_CREAT | O_TRUNC, output_file_mode_);
         if (outfd < 0)
-            throw (std::runtime_error(std::string("Could not open output file: ") + strerror(errno)));
+            throw_with_errno("Could not open output file");
 
         stages_.back().stdout_fd = outfd;
         break;
@@ -1258,7 +1267,7 @@ void ExecPipeImpl::run() {
 
         int retval = select(max_fds + 1, &read_fds, &write_fds, nullptr, nullptr);
         if (retval < 0)
-            throw (std::runtime_error(std::string("Error during select() on file descriptors: ") + strerror(errno)));
+            throw_with_errno("Error during select() on file descriptors");
 
         LOG_TRACE("select() on " << retval << " file descriptors: " << strerror(errno));
 
@@ -1687,6 +1696,13 @@ int ExecPipe::get_return_signal(size_t stage_id) const {
 bool ExecPipe::all_return_codes_zero() const {
     return impl_->all_return_codes_zero();
 }
+
+/******************************************************************************/
+// ExecPipeError
+
+ExecPipeError::ExecPipeError(const std::string& message)
+    : std::runtime_error(message)
+{ }
 
 /******************************************************************************/
 // ExecPipeSource
