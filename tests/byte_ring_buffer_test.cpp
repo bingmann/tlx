@@ -46,6 +46,11 @@ void test1() {
         die_unequal(*reinterpret_cast<size_t*>(bp.bottom()), i);
 
         bp.advance(sizeof(size_t));
+
+        tlx::ByteRingBuffer cbp = bp;
+
+        die_unequal(cbp.size(), bp.size());
+        die_unequal(cbp.bottom_size(), bp.bottom_size());
     }
 }
 
