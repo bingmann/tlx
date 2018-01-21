@@ -20,6 +20,7 @@
 #ifndef TLX_EXEC_PIPE_HEADER
 #define TLX_EXEC_PIPE_HEADER
 
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -109,6 +110,13 @@ public:
 
     //! Write input data to the next pipe stage via a buffer.
     void write(const void* data, size_t size);
+};
+
+//! Exception class thrown by run() if any system call fails.
+class ExecPipeError : public std::runtime_error
+{
+public:
+    explicit ExecPipeError(const std::string& message);
 };
 
 /*!
