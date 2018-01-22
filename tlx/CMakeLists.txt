@@ -17,7 +17,6 @@ set(LIBTLX_SOURCES
   digest/sha1.cpp
   digest/sha256.cpp
   digest/sha512.cpp
-  exec_pipe.cpp
   logger.cpp
   math/integer_log2.cpp
   math/is_power_of_two.cpp
@@ -51,6 +50,11 @@ set(LIBTLX_SOURCES
   thread_pool.cpp
 
   )
+
+if(NOT MSVC)
+  set(LIBTLX_SOURCES ${LIBTLX_SOURCES}
+    exec_pipe.cpp)
+endif()
 
 # tell top-level cmakelists which library we build: assume only static
 set(TLX_EXPORTED_LIBS tlx)

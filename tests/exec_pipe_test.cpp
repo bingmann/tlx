@@ -13,13 +13,33 @@
 #include <tlx/die.hpp>
 #include <tlx/digest/sha256.hpp>
 #include <tlx/string/hexdump.hpp>
+#include <tlx/logger.hpp>
 
 #include <iomanip>
 #include <iostream>
 #include <sstream>
 
+// methods to iron out wrinkles between operating systems
+#if __linux__
+static const char* md5prog = "md5sum";
+static const char* sha256prog = "sha256sum";
+
+static inline std::string digest_map(std::string s) {
+    return s + "  -\n";
+}
+#else
+static const char* md5prog = "md5";
+static const char* sha256prog = "sha256";
+
+static inline std::string digest_map(std::string s) {
+    return s + "\n";
+}
+#endif
+
 // Test pipe: none -> program -> string
 void test_none_program_string() {
+    LOG1 << "test_none_program_string()";
+
     tlx::ExecPipe ep;
 
     std::string output;
@@ -29,11 +49,13 @@ void test_none_program_string() {
 
     die_unless(ep.run().all_return_codes_zero());
 
-    die_unless(output == "test123\n");
+    die_unequal(output, "test123\n");
 }
 
 // Test pipe: string -> program -> string
 void test_string_program_string() {
+    LOG1 << "test_string_program_string()";
+
     tlx::ExecPipe ep;
 
     std::string input = "test123";
@@ -49,11 +71,13 @@ void test_string_program_string() {
 
     // std::cout << "o " << output.size() << " i " << input.size() << "\n";
 
-    die_unless(output == input);
+    die_unequal(output, input);
 }
 
 // Test pipe: string -> program -> program -> string
 void test_string_program_program_string() {
+    LOG1 << "test_string_program_program_string()";
+
     tlx::ExecPipe ep;
 
     std::string input = "test123";
@@ -63,18 +87,20 @@ void test_string_program_program_string() {
     ep.set_output_string(&output);
 
     ep.add_exec("/bin/cat");
-    ep.add_execp("md5sum");
+    ep.add_execp(md5prog);
 
     die_unless(ep.run().all_return_codes_zero());
 
-    die_unless(output == "cc03e747a6afbbcbf8be7668acfebee5  -\n");
+    die_unequal(output, digest_map("cc03e747a6afbbcbf8be7668acfebee5"));
 }
 
 // Test pipe: file -> program -> string
 void test_file_program_string() {
+    LOG1 << "test_file_program_string()";
+
     tlx::ExecPipe ep;
 
-    ep.set_input_file("/proc/uptime");
+    ep.set_input_file("/etc/hosts");
 
     std::string output;
     ep.set_output_string(&output);
@@ -104,11 +130,13 @@ public:
     }
 
     void eof() final {
-        ok_ = (save_ == "cc03e747a6afbbcbf8be7668acfebee5  -\n");
+        ok_ = (save_ == digest_map("cc03e747a6afbbcbf8be7668acfebee5"));
     }
 };
 
 void test_string_program_object() {
+    LOG1 << "test_string_program_object()";
+
     tlx::ExecPipe ep;
 
     std::string input = "test123";
@@ -117,7 +145,7 @@ void test_string_program_object() {
     TestSink sink;
     ep.set_output_sink(&sink);
 
-    ep.add_execp("md5sum");
+    ep.add_execp(md5prog);
 
     die_unless(ep.run().all_return_codes_zero());
 
@@ -150,6 +178,8 @@ public:
 // Test pipe: object -> program -> string
 
 void test_object_program_string() {
+    LOG1 << "test_object_program_string()";
+
     tlx::ExecPipe ep;
 
     TestSource source;
@@ -162,7 +192,7 @@ void test_object_program_string() {
 
     die_unless(ep.run().all_return_codes_zero());
 
-    die_unless(source.wrote_ == output);
+    die_unequal(source.wrote_, output);
 }
 
 // Test pipe: object -> program -> function -> program -> string
@@ -176,19 +206,17 @@ public:
 
     void process(const void* data, size_t datalen) final {
         ctx_.process(data, datalen);
-
         write(data, datalen);
     }
 
     void eof() final {
-        unsigned char digest[tlx::SHA256::kDigestLength];
-        ctx_.finalize(digest);
-
-        digest_.assign(reinterpret_cast<char*>(digest), sizeof(digest));
+        digest_ = ctx_.digest_hex();
     }
 };
 
 void test_object_program_object_program_string() {
+    LOG1 << "test_object_program_object_program_string()";
+
     tlx::ExecPipe ep;
 
     TestSource source;
@@ -202,16 +230,20 @@ void test_object_program_object_program_string() {
     TestFunctionSHA256 func;
     ep.add_function(&func);
 
-    ep.add_execp("sha256sum");
+    ep.add_execp(sha256prog);
 
     die_unless(ep.run().all_return_codes_zero());
 
-    die_unequal(tlx::hexdump_lc(func.digest_),
-                "56ecf4a9d98115c3b2b47a5c0af9a1562c674e086bc05c095acbaaf4531359e5");
-    die_unless(output == "56ecf4a9d98115c3b2b47a5c0af9a1562c674e086bc05c095acbaaf4531359e5  -\n");
+    die_unequal(func.digest_,
+                "56ecf4a9d98115c3b2b47a5c0af9a156"
+                "2c674e086bc05c095acbaaf4531359e5");
+    die_unequal(output, digest_map("56ecf4a9d98115c3b2b47a5c0af9a156"
+                                   "2c674e086bc05c095acbaaf4531359e5"));
 }
 
 void test_object_program_object_string() {
+    LOG1 << "test_object_program_object_string()";
+
     tlx::ExecPipe ep;
 
     TestSource source;
@@ -227,12 +259,16 @@ void test_object_program_object_string() {
 
     die_unless(ep.run().all_return_codes_zero());
 
-    die_unequal(tlx::hexdump_lc(func.digest_),
-                "56ecf4a9d98115c3b2b47a5c0af9a1562c674e086bc05c095acbaaf4531359e5");
-    die_unless(output.size() == 100 * 1024);
+    die_unequal(func.digest_,
+                "56ecf4a9d98115c3b2b47a5c0af9a156"
+                "2c674e086bc05c095acbaaf4531359e5");
+    die_unequal(output.size(), 100 * 1024u);
 }
 
 void test_none_program_set_string() {
+#if __linux__
+    LOG1 << "test_none_program_set_string()";
+
     tlx::ExecPipe ep;
 
     std::vector<std::string> args;
@@ -251,12 +287,15 @@ void test_none_program_set_string() {
     die_unless(ep.run().all_return_codes_zero());
 
     die_unless(output.find("TEST=123") != std::string::npos);
+#endif
 }
 
 void test_error_debug_output_null(const char*)
 { }
 
 void test_error_none_program_none() {
+    LOG1 << "test_error_none_program_none()";
+
     tlx::ExecPipe ep;
     ep.set_debug_level(tlx::ExecPipe::DL_INFO);
     ep.set_debug_output(test_error_debug_output_null);
@@ -267,18 +306,7 @@ void test_error_none_program_none() {
 
     die_unless(!ep.all_return_codes_zero());
 
-    die_unless(ep.get_return_code(0) == 255);
-}
-
-void test_segfault_none_program_none() {
-    tlx::ExecPipe ep;
-
-    ep.add_exec("./test_segfault");
-
-    ep.run();
-    die_unless(!ep.all_return_codes_zero());
-
-    // die_unequal( ep.get_return_signal(0), 11 );
+    die_unequal(ep.get_return_code(0), 255);
 }
 
 int main() {
@@ -293,7 +321,6 @@ int main() {
     test_none_program_set_string();
 
     test_error_none_program_none();
-    test_segfault_none_program_none();
 
     return 0;
 }

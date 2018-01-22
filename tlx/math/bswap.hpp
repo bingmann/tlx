@@ -19,6 +19,13 @@
 #include <stdlib.h>
 #endif
 
+#if defined(__FreeBSD__) && defined(bswap32)
+#undef bswap32
+#endif
+#if defined(__FreeBSD__) && defined(bswap64)
+#undef bswap64
+#endif
+
 namespace tlx {
 
 //! \addtogroup tlx_math
