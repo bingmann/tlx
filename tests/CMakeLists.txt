@@ -65,6 +65,7 @@ if(NOT MSVC)
 endif()
 
 tlx_build_test(algorithm_test)
+tlx_build_test(exclusive_scan_test)
 tlx_build_test(backtrace_test)
 tlx_build_test(btree_test)
 tlx_build_test(byte_ring_buffer_test)
