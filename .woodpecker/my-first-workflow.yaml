@@ -1,0 +1,12 @@
+when:
+  - event: push
+    branch: master
+
+steps:
+  - name: build
+    image: docker.io/library/debian
+    commands:
+      - echo "This is the build step"
+      - echo "binary-data-123" > executable
+      - mkdir build; cd build
+      - cmake -DCMAKE_BUILD_TYPE=Release ..
