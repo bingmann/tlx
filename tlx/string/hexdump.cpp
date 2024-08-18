@@ -3,12 +3,13 @@
  *
  * Part of tlx - http://panthema.net/tlx
  *
- * Copyright (C) 2007-2017 Timo Bingmann <tb@panthema.net>
+ * Copyright (C) 2007-2024 Timo Bingmann <tb@panthema.net>
  *
  * All rights reserved. Published under the Boost Software License, Version 1.0
  ******************************************************************************/
 
 #include <tlx/string/hexdump.hpp>
+#include <tlx/container/string_view.hpp>
 
 #include <cstdint>
 #include <sstream>
@@ -40,7 +41,7 @@ std::string hexdump(const void* const data, size_t size) {
     return out;
 }
 
-std::string hexdump(const std::string& str) {
+std::string hexdump(tlx::string_view str) {
     return hexdump(str.data(), str.size());
 }
 
@@ -114,7 +115,7 @@ std::string hexdump_lc(const void* const data, size_t size) {
     return out;
 }
 
-std::string hexdump_lc(const std::string& str) {
+std::string hexdump_lc(tlx::string_view str) {
     return hexdump_lc(str.data(), str.size());
 }
 
@@ -129,10 +130,10 @@ std::string hexdump_lc(const std::vector<std::uint8_t>& data) {
 /******************************************************************************/
 // Parser for Hex Digit Sequence
 
-std::string parse_hexdump(const std::string& str) {
+std::string parse_hexdump(tlx::string_view str) {
     std::string out;
 
-    for (std::string::const_iterator si = str.begin(); si != str.end(); ++si) {
+    for (tlx::string_view::const_iterator si = str.begin(); si != str.end(); ++si) {
 
         unsigned char c = 0;
 

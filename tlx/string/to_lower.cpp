@@ -3,13 +3,13 @@
  *
  * Part of tlx - http://panthema.net/tlx
  *
- * Copyright (C) 2007-2017 Timo Bingmann <tb@panthema.net>
+ * Copyright (C) 2007-2024 Timo Bingmann <tb@panthema.net>
  *
  * All rights reserved. Published under the Boost Software License, Version 1.0
  ******************************************************************************/
 
 #include <tlx/string/to_lower.hpp>
-
+#include <tlx/container/string_view.hpp>
 #include <algorithm>
 
 namespace tlx {
@@ -26,7 +26,8 @@ std::string& to_lower(std::string* str) {
     return *str;
 }
 
-std::string to_lower(const std::string& str) {
+std::string to_lower(tlx::string_view str)
+{
     std::string str_copy(str.size(), 0);
     std::transform(str.begin(), str.end(), str_copy.begin(),
                    [](char c) { return to_lower(c); });

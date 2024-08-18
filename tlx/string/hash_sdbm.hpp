@@ -3,7 +3,7 @@
  *
  * Part of tlx - http://panthema.net/tlx
  *
- * Copyright (C) 2019 Timo Bingmann <tb@panthema.net>
+ * Copyright (C) 2019-2024 Timo Bingmann <tb@panthema.net>
  *
  * All rights reserved. Published under the Boost Software License, Version 1.0
  ******************************************************************************/
@@ -13,6 +13,7 @@
 
 #include <cstdint>
 #include <string>
+#include <tlx/container/string_view.hpp>
 
 namespace tlx {
 
@@ -70,7 +71,7 @@ std::uint32_t hash_sdbm(const char* str, size_t size) {
  * http://www.cse.yorku.ca/~oz/hash.html
  */
 static inline
-std::uint32_t hash_sdbm(const std::string& str) {
+std::uint32_t hash_sdbm(tlx::string_view str) {
     return hash_sdbm(str.data(), str.size());
 }
 

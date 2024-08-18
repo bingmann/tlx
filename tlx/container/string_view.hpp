@@ -14,7 +14,7 @@
  *
  * Part of tlx - http://panthema.net/tlx
  *
- * Copyright (C) 2016-2020 Timo Bingmann <tb@panthema.net>
+ * Copyright (C) 2016-2024 Timo Bingmann <tb@panthema.net>
  *
  * All rights reserved. Published under the Boost Software License, Version 1.0
  ******************************************************************************/
@@ -23,13 +23,16 @@
 #define TLX_CONTAINER_STRING_VIEW_HEADER
 
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
 #include <iterator>
 #include <ostream>
 #include <stdexcept>
 #include <string>
 
-#include <tlx/string/hash_djb2.hpp>
+#if  __cplusplus >= 201703L
+#include <string_view>
+#endif
 
 namespace tlx {
 
@@ -67,12 +70,13 @@ public:
     //! assignment
     StringView& operator = (const StringView& rhs) noexcept = default;
 
-    //! assign a whole string
+    //! assign a whole l-value string
     StringView(const std::string& str) noexcept
         : ptr_(str.data()), size_(str.size()) { }
 
-    //! constructing a StringView from a temporary string is a bad idea
-    StringView(std::string&&) = delete;
+    //! assign a whole r-value string
+    StringView(std::string&& str)
+        : ptr_(str.data()), size_(str.size()) { }
 
     //! assign a whole C-style string
     StringView(const char* str) noexcept
@@ -90,6 +94,11 @@ public:
     StringView(const std::string::const_iterator& begin,
                const std::string::const_iterator& end) noexcept
         : StringView(begin, end - begin) { }
+
+#if  __cplusplus >= 201703L
+    StringView(std::string_view sv) noexcept
+        : StringView(sv.data(), sv.size()) { }
+#endif
 
     //! \name iterators
     //! \{
@@ -622,7 +631,12 @@ namespace std {
 template <>
 struct hash<tlx::StringView> {
     size_t operator () (const tlx::StringView& sv) const {
-        return tlx::hash_djb2(sv.data(), sv.size());
+        std::uint32_t h = 5381;
+        for (tlx::StringView::const_iterator it = sv.begin(); it != sv.end(); ++it) {
+            // hash * 33 + c
+            h = ((h << 5) + h) + static_cast<unsigned char>(*it);
+        }
+        return h;
     }
 };
 

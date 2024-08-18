@@ -3,7 +3,7 @@
  *
  * Part of tlx - http://panthema.net/tlx
  *
- * Copyright (C) 2007-2017 Timo Bingmann <tb@panthema.net>
+ * Copyright (C) 2007-2024 Timo Bingmann <tb@panthema.net>
  *
  * All rights reserved. Published under the Boost Software License, Version 1.0
  ******************************************************************************/
@@ -28,13 +28,13 @@ int compare_icase(const char* a, const char* b) {
     }
 
     if (*a == 0 && *b != 0) return +1;
-    else if (*a != 0 && *b == 0) return -1;
-    else return 0;
+    if (*a != 0 && *b == 0) return -1;
+    return 0;
 }
 
-int compare_icase(const char* a, const std::string& b) {
+int compare_icase(const char* a, tlx::string_view b) {
 
-    std::string::const_iterator bi = b.begin();
+    tlx::string_view::const_iterator bi = b.begin();
 
     while (*a != 0 && bi != b.end())
     {
@@ -47,12 +47,13 @@ int compare_icase(const char* a, const std::string& b) {
     }
 
     if (*a == 0 && bi != b.end()) return +1;
-    else if (*a != 0 && bi == b.end()) return -1;
-    else return 0;
+    if (*a != 0 && bi == b.end()) return -1;
+    return 0;
 }
 
-int compare_icase(const std::string& a, const char* b) {
-    std::string::const_iterator ai = a.begin();
+int compare_icase(tlx::string_view a, const char* b)
+{
+    tlx::string_view::const_iterator ai = a.begin();
 
     while (ai != a.end() && *b != 0)
     {
@@ -65,13 +66,14 @@ int compare_icase(const std::string& a, const char* b) {
     }
 
     if (ai == a.end() && *b != 0) return +1;
-    else if (ai != a.end() && *b == 0) return -1;
-    else return 0;
+    if (ai != a.end() && *b == 0) return -1;
+    return 0;
 }
 
-int compare_icase(const std::string& a, const std::string& b) {
-    std::string::const_iterator ai = a.begin();
-    std::string::const_iterator bi = b.begin();
+int compare_icase(tlx::string_view a, tlx::string_view b)
+{
+    tlx::string_view::const_iterator ai = a.begin();
+    tlx::string_view::const_iterator bi = b.begin();
 
     while (ai != a.end() && bi != b.end())
     {
@@ -84,8 +86,8 @@ int compare_icase(const std::string& a, const std::string& b) {
     }
 
     if (ai == a.end() && bi != b.end()) return +1;
-    else if (ai != a.end() && bi == b.end()) return -1;
-    else return 0;
+    if (ai != a.end() && bi == b.end()) return -1;
+    return 0;
 }
 
 } // namespace tlx
