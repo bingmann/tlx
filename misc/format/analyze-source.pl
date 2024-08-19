@@ -4,14 +4,10 @@
 #
 # Part of tlx - http://panthema.net/tlx
 #
-# Copyright (C) 2014-2017 Timo Bingmann <tb@panthema.net>
+# Copyright (C) 2014-2024 Timo Bingmann <tb@panthema.net>
 #
 # All rights reserved. Published under the Boost Software License, Version 1.0
 ################################################################################
-
-# uncrustify executable
-my $uncrustify = "uncrustify";
-my $uncrustify_sign = "Uncrustify-0.76.0_f";
 
 # print multiple email addresses
 my $email_multimap = 0;
@@ -21,13 +17,6 @@ my $launch_emacs = 0;
 
 # write changes to files (dangerous!)
 my $write_changes = 0;
-
-# function testing whether to uncrustify a path
-sub filter_uncrustify($) {
-    my ($path) = @_;
-
-    return 1;
-}
 
 use strict;
 use warnings;
@@ -339,64 +328,6 @@ sub process_cpp {
         }
     }
 
-    # run uncrustify if in filter
-    if (filter_uncrustify($path))
-    {
-        my $data = join("", @data);
-        @data = filter_program($data, $uncrustify, "-q", "-c", "misc/format/uncrustify.cfg", "-l", "CPP");
-
-        # manually add blank line after "namespace xyz {" and before "} // namespace xyz"
-        my @namespace;
-        for(my $i = 0; $i < @data-1; ++$i)
-        {
-            if ($data[$i] =~ m!^namespace (\S+) \{!) {
-                push(@namespace, $1);
-            }
-            elsif ($data[$i] =~ m!^namespace \{!) {
-                push(@namespace, "");
-            }
-            elsif ($data[$i] =~ m!^}\s+//\s+namespace\s+(\S+)\s*$!) {
-                if (@namespace == 0) {
-                    print "$path\n";
-                    print "    NAMESPACE UNBALANCED! @ $i\n";
-                    #system("emacsclient -n $path");
-                }
-                else {
-                    # quiets wrong uncrustify indentation
-                    $data[$i] =~ s!}\s+//\s+namespace!} // namespace!;
-                    expectr($path, $i, @data, "} // namespace ".$namespace[-1]."\n",
-                            qr!^}\s+//\s+namespace!);
-                }
-                if ($data[$i-1] !~ m!^}\s+// namespace!) {
-                    splice(@data, $i, 0, "\n"); ++$i;
-                }
-                pop(@namespace);
-            }
-            elsif ($data[$i] =~ m!^}\s+//\s+namespace\s*$!) {
-                if (@namespace == 0) {
-                    print "$path\n";
-                    print "    NAMESPACE UNBALANCED! @ $i\n";
-                    #system("emacsclient -n $path");
-                }
-                else {
-                    # quiets wrong uncrustify indentation
-                    $data[$i] =~ s!}\s+//\s+namespace!} // namespace!;
-                    expectr($path, $i, @data, "} // namespace\n",
-                            qr!^}\s+//\s+namespace!);
-                }
-                if ($data[$i-1] !~ m!^}\s+// namespace!) {
-                    splice(@data, $i, 0, "\n"); ++$i;
-                }
-                pop(@namespace);
-            }
-        }
-        if (@namespace != 0) {
-            print "$path\n";
-            print "    NAMESPACE UNBALANCED!\n";
-            #system("emacsclient -n $path");
-        }
-    }
-
     return if array_equal(\@data, \@origdata);
 
     print "$path\n";
@@ -520,12 +451,6 @@ foreach my $arg (@ARGV) {
 
 (-e "tlx/CMakeLists.txt")
     or die("Please run this script in the tlx source base directory.");
-
-# check uncrustify's version:
-my ($uncrustver) = filter_program("", $uncrustify, "--version");
-chomp($uncrustver);
-($uncrustver eq $uncrustify_sign)
-    or die("Requires $uncrustify to run correctly. Got: $uncrustver");
 
 use File::Find;
 my @filelist;
@@ -679,34 +604,6 @@ if (1)
         next if defined $vi{$v}{index};
         strongconnect($v);
     }
-}
-
-# run cpplint.py
-{
-    my @lintlist;
-
-    foreach my $path (@source_filelist)
-    {
-        #next if $path =~ /exclude/;
-
-        push(@lintlist, $path);
-    }
-
-    my @filter = (
-        "-build/c++11",
-        "-build/header_guard",
-        "-readability/braces",
-        "-runtime/int",
-        "-whitespace/blank_line",
-        "-whitespace/braces",
-        "-whitespace/comments",
-        "-whitespace/indent",
-        "-whitespace/newline",
-        );
-
-    system("cpplint", "--counting=total", "--extensions=h,c,cc,hpp,cpp",
-           "--filter=".join(",", @filter),
-           "--quiet", @lintlist);
 }
 
 ################################################################################
