@@ -9,12 +9,15 @@
  ******************************************************************************/
 
 // this makes sleep_for() available in older GCC versions
+#include <atomic>
+#include <thread>
 #define _GLIBCXX_USE_NANOSLEEP
 
 #include <tlx/die.hpp>
 #include <tlx/thread_pool.hpp>
+#include <chrono>
+#include <cstddef>
 #include <numeric>
-#include <string>
 #include <vector>
 
 void test_loop_until_empty()

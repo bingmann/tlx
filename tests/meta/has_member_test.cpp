@@ -8,13 +8,9 @@
  * All rights reserved. Published under the Boost Software License, Version 1.0
  ******************************************************************************/
 
-#include <tlx/die.hpp>
 #include <tlx/meta/has_member.hpp>
-#include <tlx/meta/has_method.hpp>
 #include <tlx/unused.hpp>
 #include <cmath>
-#include <cstddef>
-#include <string>
 
 /******************************************************************************/
 // has_member test

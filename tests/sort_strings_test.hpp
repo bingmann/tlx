@@ -13,13 +13,15 @@
 #ifndef TLX_TESTS_SORT_STRINGS_TEST_HEADER
 #define TLX_TESTS_SORT_STRINGS_TEST_HEADER
 
+#include <tlx/container/simple_vector.hpp>
 #include <tlx/logger.hpp>
-#include <tlx/simple_vector.hpp>
 #include <tlx/sort/strings/string_ptr.hpp>
+#include <tlx/sort/strings/string_set.hpp>
 #include <tlx/timestamp.hpp>
-#include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <random>
+#include <string>
 
 #if TLX_MORE_TESTS
 static const bool tlx_more_tests = true;
