@@ -711,8 +711,8 @@ auto make_radix_heap(KeyExtract&& key_extract)
     -> RadixHeap<DataType, KeyExtract,
                  decltype(key_extract(std::declval<DataType>())), Radix>
 {
-    return (RadixHeap<DataType, KeyExtract, decltype(key_extract(DataType{})),
-                      Radix>{key_extract});
+    return RadixHeap<DataType, KeyExtract, decltype(key_extract(DataType{})),
+                     Radix>(std::forward<KeyExtract>(key_extract));
 }
 
 /*!

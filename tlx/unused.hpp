@@ -14,10 +14,11 @@
 namespace tlx {
 
 /******************************************************************************/
-// UNUSED(variables...)
+// tlx::unused(variables...)
 
 template <typename... Types>
-void unused(Types&&...)
+// NOLINTNEXTLINE(cppcoreguidelines-missing-std-forward)
+void unused(Types&&... /*xs*/)
 {
 }
 

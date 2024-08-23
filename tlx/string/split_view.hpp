@@ -40,7 +40,7 @@ namespace tlx {
  */
 template <typename Functor>
 static inline void split_callback(
-    char sep, tlx::string_view str, Functor&& callback,
+    char sep, tlx::string_view str, Functor callback,
     std::string::size_type limit = std::string::npos)
 {
     if (limit == 0)

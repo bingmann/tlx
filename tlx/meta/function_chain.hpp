@@ -149,7 +149,7 @@ public:
     template <typename... Input>
     auto operator()(Input&&... value) const
     {
-        return fold()(std::move(value...));
+        return fold()(std::forward<Input...>(value)...);
     }
 
     //! Is true if the FunctionChain is empty.
