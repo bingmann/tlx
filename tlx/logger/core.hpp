@@ -213,7 +213,7 @@ class LoggerCollectOutput : public LoggerOutputHook
 {
 public:
     explicit LoggerCollectOutput(bool echo = false);
-    ~LoggerCollectOutput();
+    ~LoggerCollectOutput() override;
 
     //! return transcript of log
     std::string get();
