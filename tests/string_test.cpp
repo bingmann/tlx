@@ -970,7 +970,7 @@ static void test_toupper_tolower()
 
 static void test_trim()
 {
-    // string-copy functions
+    // string_view functions
     die_unequal(tlx::trim("  abc  "), "abc");
     die_unequal(tlx::trim("abc  "), "abc");
     die_unequal(tlx::trim("  abc"), "abc");
@@ -984,7 +984,7 @@ static void test_trim()
     die_unequal(tlx::trim_right("  abc"), "  abc");
     die_unequal(tlx::trim_right("  "), "");
 
-    // in-place functions
+    // in-place string trim functions
     std::string str1 = "  abc  ";
     std::string str2 = "abc  ";
     std::string str3 = "  ";
@@ -1010,6 +1010,33 @@ static void test_trim()
     die_unequal(tlx::trim(&str2), "abc");
     die_unequal(tlx::trim(&str3), "abc");
     die_unequal(tlx::trim(&str4), "");
+
+    // in-place string_view trim functions
+    tlx::string_view sv1 = "  abc  ";
+    tlx::string_view sv2 = "abc  ";
+    tlx::string_view sv3 = "  ";
+
+    die_unequal(tlx::trim_left(&sv1), "abc  ");
+    die_unequal(tlx::trim_left(&sv2), "abc  ");
+    die_unequal(tlx::trim_left(&sv3), "");
+
+    sv1 = "  abc  ";
+    sv2 = "  abc";
+    sv3 = "  ";
+
+    die_unequal(tlx::trim_right(&sv1), "  abc");
+    die_unequal(tlx::trim_right(&sv2), "  abc");
+    die_unequal(tlx::trim_right(&sv3), "");
+
+    sv1 = "  abc  ";
+    sv2 = "  abc";
+    sv3 = "abc  ";
+    tlx::string_view sv4 = "  ";
+
+    die_unequal(tlx::trim(&sv1), "abc");
+    die_unequal(tlx::trim(&sv2), "abc");
+    die_unequal(tlx::trim(&sv3), "abc");
+    die_unequal(tlx::trim(&sv4), "");
 }
 
 static void test_word_wrap()
