@@ -285,6 +285,14 @@ public:
         return StringView(data() + pos, (std::min)(size() - pos, n));
     }
 
+#if __cplusplus >= 201703L
+    // Automatic conversion to std::string_view.
+    operator std::string_view() const noexcept
+    {
+        return std::string_view(begin(), end());
+    }
+#endif
+
     //! \name comparisons
     //! \{
 
